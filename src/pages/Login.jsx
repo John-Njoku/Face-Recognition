@@ -3,6 +3,9 @@ import * as faceapi from "face-api.js";
 import AuthIdle from "../assets/images/auth-idle.svg";
 import AuthFace from "../assets/images/auth-face.svg";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { ref, onValue, set } from "firebase/database";
+import { database } from "../firebase";
+
 
 function Login() {
   const [tempAccount, setTempAccount] = useState("");
@@ -35,6 +38,20 @@ function Login() {
     await faceapi.nets.faceRecognitionNet.loadFromUri(uri);
   };
 
+
+  useEffect(() => {
+    const accountRef = ref(database, `faceAuth/${location.state.account.id}`);
+    onValue(accountRef, (snapshot) => {
+      const accountData = snapshot.val();
+      if (accountData) {
+        setTempAccount(accountData);
+      } else {
+        setTempAccount(null);
+      }
+    });
+  }, [location.state.account.id]);
+
+
   useEffect(() => {
     setTempAccount(location?.state?.account);
   }, []);
@@ -63,17 +80,18 @@ function Login() {
         });
         clearInterval(counterInterval);
         clearInterval(faceApiIntervalRef.current);
-        localStorage.setItem(
-          "faceAuth",
-          JSON.stringify({ status: true, account: tempAccount })
-        );
-        navigate("/protected", { replace: true });
+        
+        const faceAuthRef = ref(database, "faceAuth");
+        set(faceAuthRef, { status: true, account: tempAccount }).then(() => {
+          navigate("/protected", { replace: true });
+        });
       }
 
       return () => clearInterval(counterInterval);
     }
     setCounter(5);
-  }, [loginResult, counter]);
+  }, [loginResult, counter, localUserStream, tempAccount, navigate]);
+
 
   const getLocalUserVideo = async () => {
     navigator.mediaDevices
@@ -168,11 +186,11 @@ function Login() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-[24px] max-w-[840px] mx-auto">
         <h2 className="text-center text-3xl font-extrabold tracking-tight text-rose-700 sm:text-4xl">
           <span className="block">
-            Upps! There is no profile picture associated with this account.
+            Opps! There is no profile picture associated with this account.
           </span>
         </h2>
         <span className="block mt-4">
-          Please contact administration for registration or try again later.
+          Please contact admin for registration or try again later.
         </span>
       </div>
     );
@@ -191,14 +209,14 @@ function Login() {
       {!localUserStream && modelsLoaded && (
         <h2 className="text-center text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
           <span className="block text-indigo-600 mt-2">
-            Please Recognize Your Face to Completely Log In.
+            Please Position Your Face to Completely Log In.
           </span>
         </h2>
       )}
       {localUserStream && loginResult === "SUCCESS" && (
         <h2 className="text-center text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
           <span className="block text-indigo-600 mt-2">
-            We've successfully recognize your face!
+            We've successfully recognized your face!
           </span>
           <span className="block text-indigo-600 mt-2">
             Please stay {counter} more seconds...
@@ -208,7 +226,7 @@ function Login() {
       {localUserStream && loginResult === "FAILED" && (
         <h2 className="text-center text-3xl font-extrabold tracking-tight text-rose-700 sm:text-4xl">
           <span className="block mt-[56px]">
-            Upps! We did not recognize your face.
+            Opps! We did not recognize your face.
           </span>
         </h2>
       )}
@@ -287,7 +305,7 @@ function Login() {
                       fill="#1C64F2"
                     />
                   </svg>
-                  Please wait while models were loading...
+                  Please wait while models are loading...
                 </button>
               </>
             )}

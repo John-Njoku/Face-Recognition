@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import { ref, set } from "firebase/database"; // Firebase methods
+import { database } from "../firebase"; // Firebase initialization
 import User from "../components/User";
 import { RadioGroup } from "@headlessui/react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // Updated to useNavigate
+
 
 const accounts = [
   {
@@ -35,6 +38,7 @@ function UserSelect() {
   const [selected, setSelected] = useState(accounts[0]);
   const [customUser, setCustomUser] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const navigate = useNavigate(); // Updated to use useNavigate
 
   const convertBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -49,6 +53,24 @@ function UserSelect() {
         reject(error);
       };
     });
+  };
+
+  const saveUserToFirebase = async (user) => {
+    try {
+      await set(ref(database, `users/${user.id}`), user);
+      console.log("User saved successfully:", user);
+    } catch (error) {
+      console.error("Error saving user:", error);
+      setErrorMessage("Error saving user to database.");
+    }
+  };
+
+  const handleContinue = async () => {
+    // Save the selected user to Firebase
+    await saveUserToFirebase(selected);
+
+    // Redirect to the /login page
+    navigate("/login", { state: { account: selected } });
   };
 
   return (
@@ -123,7 +145,7 @@ function UserSelect() {
                   onChange={async (e) => {
                     const files = e.target.files;
                     if (files == null || files.length == 0) {
-                      setErrorMessage("No files wait for import.");
+                      setErrorMessage("No files selected for import.");
                       return;
                     }
                     let file = files[0];
@@ -131,11 +153,13 @@ function UserSelect() {
                     let suffixArr = name.split("."),
                       suffix = suffixArr[suffixArr.length - 1];
                     if (
-                      suffix != "png" &&
-                      suffix != "jpg" &&
-                      suffix != "jpeg"
+                      suffix !== "png" &&
+                      suffix !== "jpg" &&
+                      suffix !== "jpeg"
                     ) {
-                      setErrorMessage("Only supports png jpg or jpeg files.");
+                      setErrorMessage(
+                        "Only supports png, jpg, or jpeg files."
+                      );
                       return;
                     }
 
@@ -158,9 +182,8 @@ function UserSelect() {
               )}
             </div>
           )}
-          <Link
-            to="/login"
-            state={{ account: selected }}
+          <button
+            onClick={handleContinue}
             className="mt-4 inline-flex items-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600"
           >
             Continue
@@ -178,7 +201,7 @@ function UserSelect() {
                 d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75"
               />
             </svg>
-          </Link>
+          </button>
         </div>
       </div>
     </div>

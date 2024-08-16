@@ -1,18 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ref, onValue, set } from "firebase/database";  
+import { database } from "../firebase";
 
 function Protected() {
   const [account, setAccount] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!localStorage.getItem("faceAuth")) {
-      navigate("/login");
-    }
-
-    const { account } = JSON.parse(localStorage.getItem("faceAuth"));
-    setAccount(account);
-  }, []);
+    // Check if faceAuth data exists in Firebase Realtime Database
+    const faceAuthRef = ref(database, "faceAuth");
+    
+    onValue(faceAuthRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setAccount(data.account); // Set account state from Firebase data
+      } else {
+        navigate("/login"); // Redirect to login if data doesn't exist
+      }
+    });
+  }, [navigate]);
 
   if (!account) {
     return null;
@@ -47,7 +54,7 @@ function Protected() {
           </h1>
           <div
             onClick={() => {
-              localStorage.removeItem("faceAuth");
+              set(ref (database, "faceAuth"), null);
               navigate("/");
             }}
             className="flex gap-2 mt-12 w-fit mx-auto cursor-pointer z-10 py-3 px-6 rounded-full bg-gradient-to-r from-red-400 to-red-600"
