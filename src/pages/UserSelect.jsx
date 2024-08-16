@@ -57,8 +57,13 @@ function UserSelect() {
 
   const saveUserToFirebase = async (user) => {
     try {
-      await set(ref(database, `users/${user.id}`), user);
-      console.log("User saved successfully:", user);
+      // Generate a new unique key using push()
+      const newUserRef = push(ref(database, "users"));
+
+      // Set the user data under the generated key
+      await set(newUserRef, user);
+
+      console.log("User saved successfully with ID:", newUserRef.key);
     } catch (error) {
       console.error("Error saving user:", error);
       setErrorMessage("Error saving user to database.");
