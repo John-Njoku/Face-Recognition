@@ -10,7 +10,7 @@ function Home() {
             Welcome To
           </h1>
           <h1 className="block text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-indigo-900">
-            React Face Auth
+            React Face Auth Web App
           </h1>
           <p className="mt-8 text-md text-gray-600 max-w-3xl mx-4 md:mx-16 lg:mx-auto">
             The Facial Recognition-Based Authentication Application is a
